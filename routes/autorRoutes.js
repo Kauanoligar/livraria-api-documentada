@@ -1,3 +1,4 @@
+const validateBody = require('../middlewares/validateBody');
 const { Router } = require('express');
 const controller = require('../controllers/AutorController');
 const { autenticarToken, exigirRole } = require('../middlewares/authMiddleware');
@@ -10,6 +11,7 @@ router.post(
   '/',
   autenticarToken,
   exigirRole('ADMIN'),
+  validateBody('NovoAutor'),
   (req, res, next) => controller.store(req, res, next)
 );
 

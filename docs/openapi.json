@@ -1,0 +1,903 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API de Livraria",
+    "version": "1.1.0",
+    "description": "Documentação dos contratos da API de Livros e Autores. Autenticação stateless JWT e autorização por perfis USER/ADMIN. Aluno: Kauan Oliveira Garcia. Use o login para obter um token válido e o botão Authorize para testar rotas protegidas."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Mesmo servidor da documentação"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticação"
+    },
+    {
+      "name": "Livros"
+    },
+    {
+      "name": "Autores"
+    },
+    {
+      "name": "Comentários"
+    }
+  ],
+  "paths": {
+    "/api/v1/livros": {
+      "get": {
+        "operationId": "getApiV1Livros",
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Listar livros",
+        "description": "Acesso público. Retorna todos os livros, comentários e o nome do autor. Uma coleção vazia retorna [].",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Consulta realizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LivroDetalhado"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postApiV1Livros",
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Cadastrar livro",
+        "description": "Exclusivo ADMIN. O autor_id deve corresponder a um autor existente. Ano omitido utiliza o ano atual. O livro é criado sem comentários.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Livro"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo JSON malformado ou campos obrigatórios ausentes/inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "O título e o autor_id são obrigatórios."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, expirado, inválido ou com formato incorreto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Token de autenticação não fornecido."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário autenticado sem o perfil exigido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Acesso proibido: perfil permitido: ADMIN."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Autor informado não existe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "O autor informado não existe."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovoLivro"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/livros/{id}": {
+      "get": {
+        "operationId": "getApiV1Livros{Id}",
+        "tags": [
+          "Livros"
+        ],
+        "summary": "Buscar livro por ID",
+        "description": "Acesso público. Consulta um livro e seus comentários pelo identificador.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Consulta realizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivroDetalhado"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Livro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Livro não localizado."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do livro.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "postApiV1AuthRegister",
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Cadastrar leitor",
+        "description": "Acesso público. A senha é armazenada com BCrypt. O perfil atribuído é sempre USER; o cliente não pode se tornar ADMIN pelo cadastro. O e-mail é normalizado para minúsculas e deve ser único.",
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "Criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campos obrigatórios ausentes, tipos inválidos ou senha com menos de 6 caracteres.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "A senha deve possuir pelo menos 6 caracteres."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "E-mail já cadastrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "E-mail já cadastrado no sistema."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registro"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "postApiV1AuthLogin",
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Autenticar usuário",
+        "description": "Acesso público. Valida o e-mail e a senha e retorna um JWT. Copie somente o campo token para o botão Authorize; a interface acrescenta Bearer automaticamente.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Consulta realizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sessao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "E-mail ou senha ausentes/inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "E-mail e senha são obrigatórios."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "E-mail ou senha incorretos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Credenciais inválidas."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/livros/{id}/comentarios": {
+      "post": {
+        "operationId": "postApiV1Livros{Id}Comentarios",
+        "tags": [
+          "Comentários"
+        ],
+        "summary": "Adicionar comentário",
+        "description": "Exige JWT de USER ou ADMIN. O nome do autor do comentário vem do token autenticado; não é aceito do corpo da requisição.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comentario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Texto ausente, vazio ou de tipo inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "O texto do comentário não pode estar vazio."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, expirado, inválido ou com formato incorreto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Token de autenticação não fornecido."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Perfil diferente de USER ou ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Acesso proibido: perfil permitido: USER ou ADMIN."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Livro inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Livro não localizado."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do livro.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovoComentario"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/autores": {
+      "get": {
+        "operationId": "getApiV1Autores",
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Listar autores",
+        "description": "Acesso público. Retorna os autores cadastrados.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Consulta realizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Autor"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postApiV1Autores",
+        "tags": [
+          "Autores"
+        ],
+        "summary": "Cadastrar autor",
+        "description": "Exclusivo ADMIN. Requer nome; nacionalidade omitida recebe Não informada.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Criado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Autor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Nome ausente, vazio ou dados de tipo inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "O nome do autor é obrigatório."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, expirado, inválido ou com formato incorreto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Token de autenticação não fornecido."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário autenticado sem o perfil exigido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Acesso proibido: perfil permitido: ADMIN."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha interna no processamento da requisição.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "example": {
+                  "erro": "Ocorreu um erro interno no servidor."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovoAutor"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Informe somente o JWT obtido em POST /api/v1/auth/login, sem o prefixo Bearer."
+      }
+    },
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "erro": {
+            "type": "string",
+            "example": "Livro não localizado."
+          }
+        },
+        "required": [
+          "erro"
+        ]
+      },
+      "Comentario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1720000000000
+          },
+          "autor_nome": {
+            "type": "string",
+            "example": "Leitor"
+          },
+          "texto": {
+            "type": "string",
+            "example": "Clássico indispensável."
+          }
+        },
+        "required": [
+          "id",
+          "autor_nome",
+          "texto"
+        ]
+      },
+      "Autor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "nome": {
+            "type": "string",
+            "example": "Machado de Assis"
+          },
+          "nacionalidade": {
+            "type": "string",
+            "example": "Brasileiro"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "nacionalidade"
+        ]
+      },
+      "Livro": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Dom Casmurro"
+          },
+          "ano": {
+            "type": "integer",
+            "example": 1899
+          },
+          "autor_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "comentarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comentario"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "ano",
+          "autor_id",
+          "comentarios"
+        ]
+      },
+      "LivroDetalhado": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Livro"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "autor_nome": {
+                "type": "string",
+                "example": "Machado de Assis"
+              }
+            },
+            "required": [
+              "autor_nome"
+            ]
+          }
+        ]
+      },
+      "Registro": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "Maria Silva",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "example": "maria@example.com"
+          },
+          "senha": {
+            "type": "string",
+            "example": "Leitura@123",
+            "minLength": 6,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "nome",
+          "email",
+          "senha"
+        ]
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1720000000000
+          },
+          "nome": {
+            "type": "string",
+            "example": "Maria Silva"
+          },
+          "email": {
+            "type": "string",
+            "example": "maria@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "ADMIN"
+            ],
+            "example": "USER"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "email",
+          "role"
+        ]
+      },
+      "Login": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin@livraria.com"
+          },
+          "senha": {
+            "type": "string",
+            "example": "Admin@123",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "senha"
+        ]
+      },
+      "Sessao": {
+        "type": "object",
+        "properties": {
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "nome": {
+                "type": "string",
+                "example": "Admin"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "USER",
+                  "ADMIN"
+                ],
+                "example": "ADMIN"
+              }
+            },
+            "required": [
+              "id",
+              "nome",
+              "role"
+            ]
+          },
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiJ9.payload.assinatura",
+            "description": "JWT retornado pelo login. Copie o valor real para Authorize."
+          }
+        },
+        "required": [
+          "usuario",
+          "token"
+        ]
+      },
+      "NovoAutor": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "Clarice Lispector",
+            "minLength": 1
+          },
+          "nacionalidade": {
+            "type": "string",
+            "example": "Brasileira",
+            "default": "Não informada"
+          }
+        },
+        "required": [
+          "nome"
+        ]
+      },
+      "NovoLivro": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "example": "A Hora da Estrela",
+            "minLength": 1
+          },
+          "ano": {
+            "type": "integer",
+            "example": 1977,
+            "description": "Opcional; quando omitido, utiliza o ano atual."
+          },
+          "autor_id": {
+            "type": "integer",
+            "example": 1
+          }
+        },
+        "required": [
+          "titulo",
+          "autor_id"
+        ]
+      },
+      "NovoComentario": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string",
+            "example": "Uma leitura marcante!",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "texto"
+        ]
+      }
+    }
+  }
+}
